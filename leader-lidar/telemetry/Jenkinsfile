@@ -9,26 +9,82 @@ pipeline {
         AWS_CREDS = credentials('aws-adam-iam')
     }
     stages {
+        stage('Cleaning') {
+            steps {
+                script {
+                    deleteDir()
+                    checkout scm
+                }
+            }
+        }
         stage('Parameters Set-up') {
             steps {
                 script {
                     properties([
                         disableConcurrentBuilds(), 
                         gitLabConnection(gitLabConnection: 'GitLab API Connection', jobCredentialId: ''),
-                        [$class: 'GitLabPushTrigger', branchFilterType: 'feature/*', triggerOnPush: true, triggerOnMergeRequest: false, ciSkip: true, includeBranchesSpec: "feature/*", excludeBranchesSpec: '', setBuildDescription: true]
                     ])
+                }
+            }
+        }
+        stage('Release branch versioning') {
+            when { branch "release*" }
+            steps {
+                script {
+                    sh"""
+                        git checkout master
+                        git remote set-url origin http://\"$GITLAB\"@ec2-3-125-51-254.eu-central-1.compute.amazonaws.com/adam/exam-telemetry.git
+                        git pull --rebase
+                    """
+                    BRANCH_EXISTING = sh(
+                        script: "(git ls-remote -q | grep -w $BRANCH_NAME) || BRANCH_EXISTING=False",
+                        returnStdout: true,
+                    )
+                        if (BRANCH_EXISTING) {
+                            echo "The $BRANCH_NAME branch is already existing."
+                            sh """
+                            git checkout $BRANCH_NAME
+                            git pull origin $BRANCH_NAME --rebase
+                            git fetch --tags
+                            """
+                        } else {
+                            echo "The $BRANCH_NAME branch is not exsiting yet and needs to be created."
+                            sh"""
+                            git branch $BRANCH_NAME
+                            git checkout $BRANCH_NAME
+                            git remote set-url origin http://\"$GITLAB\"@ec2-3-125-51-254.eu-central-1.compute.amazonaws.com/adam/exam-telemetry.git
+                            git fetch --tags
+                            """
+                        }
+                    MINOR_VERSION = BRANCH_NAME.split("/")[1]
+                    LATEST_TAG = sh(
+                        script: "git tag | sort -V | grep '^$MINOR_VERSION' | tail -1  || true",
+                        returnStdout: true,
+                    ).toString()
+                    if (LATEST_TAG == "*.0") {
+                            NEW_PATCH = "1"
+                        } else if (LATEST_TAG) {
+                            NEW_PATCH = (LATEST_TAG.tokenize(".")[2].toInteger() + 1).toString()
+                        } else {
+                            NEW_PATCH = "0"
+                    }
+                    NEW_TAG = MINOR_VERSION + "." + NEW_PATCH
+                    echo "The new tag for feature commit is $NEW_TAG"
+                    configFileProvider([configFile(fileId: 'fc3e184d-fd76-4262-a1e7-9a5671ebd340', variable: 'MAVEN_SETTINGS_XML')]) {
+                        sh "mvn versions:set -DnewVersion=$NEW_TAG"
+                    }
                 }
             }
         }
         stage('Initialization') {
             steps {
                 script {
-                    sh '''
-                    echo "PATH = ${PATH}"
-                    echo "M2_HOME = ${M2_HOME}"
+                    sh"""
+                    echo "PATH = $PATH"
+                    echo "M2_HOME = $M2_HOME"
                     mvn validate
                     mvn initialize
-                    '''
+                    """
                     echo 'Maven CI job has been validated and initialized.'
                 }
                 
@@ -37,7 +93,7 @@ pipeline {
         stage('Compilation') {
             steps {
                 script {
-                    sh 'mvn compile'
+                    sh "mvn compile"
                     echo 'Maven CI job has been compiled.'
                 } 
             }
@@ -45,9 +101,7 @@ pipeline {
         stage('Unit tests') {
             steps {
                 script {
-                    sh '''
-                    mvn test
-                    '''
+                    sh "mvn test"
                     echo "Unit tests for maven CI job have been passed."
                 } 
             }
@@ -55,19 +109,45 @@ pipeline {
         stage('Packaging') {
             steps {
                 script {
-                    sh '''
-                    mvn package
-                    '''
+                    sh "mvn package"
                     echo "An artifact for maven CI job has been created."
                 } 
             }
-        }    
-        stage('Publishing to artifactory') {
+        }
+        stage('Conditional E2E Testing') {
+            when { branch "feature*" }
+                steps {
+                    script {
+                        E2E_CHECKER = sh(
+                            script: "git log --format=\"medium\" -1 | grep '#e2e' || true",
+                            returnStdout: true,
+                        )
+                        if (E2E_CHECKER == '#e2e') {
+                            echo "E2E Testing here"
+                        }
+                    }
+                }
+        }
+        stage('E2E Testing') {
+            when { branch "master" }
             steps {
                 script {
-                    sh '''
-                    mvn deploy -DskipTests
-                    '''
+                    echo "E2E Testing here"
+                }
+            }    
+        }
+        stage('Publishing to artifactory') {
+            when {
+                anyOf {
+                    branch "master"
+                    branch "release*"
+                }
+            }
+            steps {
+                script {
+                    configFileProvider([configFile(fileId: 'fc3e184d-fd76-4262-a1e7-9a5671ebd340', variable: 'MAVEN_SETTINGS_XML')]) {
+                        sh "mvn  -Dmaven.test.failure.ignore=true -DskipTests -s $MAVEN_SETTINGS_XML deploy"
+                    }
                     echo "An artifact for maven CI job has been created."
                 } 
             }

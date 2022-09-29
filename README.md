@@ -23,7 +23,7 @@
 
 #### 1. Set up 4 repositories in GitLab. Integrate with JFrog Artifactory (by adjusting pom.xml files) -- PASSED
 
-#### 2. Check if I can do "mvn deploy" with all repos to artifactory (mind the order of deployment) - 1. Telemetry 2. Analytics 3. E2E 4. Product
+#### 2. Check if I can do "mvn deploy" with all repos to artifactory (mind the order of deployment) - 1. Telemetry 2. Analytics 3. E2E 4. Product -- PASSED
 
 #### 3. Create CI (Jenkinsfile), Release, and E2E Testing.
 
@@ -33,7 +33,7 @@
 		- "master" branch -- passing build, unit tests, e2e tests, and publishes to artifactory (mvn deploy -DskipTests) for every commit (triggered by push)
 		- "release/\*" branches -- attempting a release (step 5); no E2E tests!
 ###### 	b. Analytics:
-		- "feature/\*" branches -- passing build and unit tests for every commit (triggered by push); if commit message is with "#e2e", e2e tests for analytics will be executed using telemetry:99-SNAPSHOT.jar
+		- "feature/\*" branches -- passing build and unit tests for every commit (triggered by push); e2e tests for analytics will be executed using telemetry:99-SNAPSHOT.jar
 		- "master" branch -- passing build, unit tests, e2e tests, and publishes to artifactory (mvn deploy -DskipTests) for every commit (triggered by push)
 		- "release/\*" branches -- attempting a release (step 5)
 ###### 	c. Product:

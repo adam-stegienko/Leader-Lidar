@@ -1,4 +1,5 @@
 pipeline {
+    // just some test
     agent any
     tools {
         maven 'Maven 3.6.2'
@@ -9,13 +10,20 @@ pipeline {
         AWS_CREDS = credentials('aws-adam-iam')
     }
     stages {
+         stage('Cleaning') {
+            steps {
+                script {
+                    deleteDir()
+                    checkout scm
+                }
+            }
+        }
         stage('Parameters Set-up') {
             steps {
                 script {
                     properties([
                         disableConcurrentBuilds(), 
                         gitLabConnection(gitLabConnection: 'GitLab API Connection', jobCredentialId: ''),
-                        [$class: 'GitLabPushTrigger', branchFilterType: 'feature/*', triggerOnPush: true, triggerOnMergeRequest: false, ciSkip: true, includeBranchesSpec: "feature/*", excludeBranchesSpec: '', setBuildDescription: true]
                     ])
                 }
             }
@@ -65,9 +73,9 @@ pipeline {
         stage('Publishing to artifactory') {
             steps {
                 script {
-                    sh '''
-                    mvn deploy -DskipTests
-                    '''
+                    configFileProvider([configFile(fileId: 'fc3e184d-fd76-4262-a1e7-9a5671ebd340', variable: 'MAVEN_SETTINGS_XML')]) {
+                        sh "mvn  -Dmaven.test.failure.ignore=true -DskipTests -s $MAVEN_SETTINGS_XML deploy"
+                    }
                     echo "An artifact for maven CI job has been created."
                 } 
             }
