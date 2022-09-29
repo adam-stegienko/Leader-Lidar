@@ -18,6 +18,22 @@
 ## Final Exam Notes Below (To be marked as "PASSED")
 
 
+
+### 1. Create a chart drawing for each pipeline
+### 2. Create a "test" branch for each repo not to mess up with other branches.
+### 3. Remember to set up correct permissions in settings.xml file (already done but needs double-ckeck)
+### 4. Start with:
+#### 	I. Telemetry (package)
+#### 	II. Analytics (package)
+#### 	III. End-to-End Testing
+#### 	IV. Product (zip file)
+### 5. Exam Day 1 --> Today's goal is to finish Step 1 and Step 2, as well as to have Analytics and Telemetry packages available in artifactory (with release and testing processes ready)
+### 6. Exam Day 2 --> Final purpose is to a have a fully functional, integrated CI and E2E testing process for the whole Leader-Lidar project
+
+
+## Final Exam Notes Below (To be marked as "PASSED")
+
+
 ### 1. Set up 4 repositories in GitLab. Integrate with JFrog Artifactory (by adjusting pom.xml files)
 
 ### 2. Check if I can do "mvn deploy" with all repos to artifactory (mind the order of deployment) - 1. Telemetry 2. Analytics 3. E2E 4. Product
@@ -47,6 +63,16 @@
 #### 	f. On successful E2E testing:
 #####		- publish latest version to artifactory (using "mvn deploy -DskipTests")
 #####		- tag the new version and push it to the repo (git tag x.y.z --> git push --tags)
+
+### 6. E2E Testing
+#### 	a. Fetch the ".jar" files for testing:
+#####		- Analytics -- find the first testing file in the target folder and download the second one from artifactory (e.g. by using curl or wget)
+#####		- Product -- find the testing files in the zip file
+#### 	b. Run test simulator:
+#####		- Make sure that simulator, telemetry, and analytics ".jar" files are in its classpath (using "java -cp <jar1>:<jar2>:<jar3>com.lidar.simulation.Simulator", these are jar1 - analytics, jar2 - telemetry, jar3 - simulator)
+#### 	c. Inititally run "tests-sanity.txt"
+#### 	d. Ultimately run all tests found in tests.txt (tests-full.txt); do it fast!
+#### 	e. Simulator should return 0 status code on finish -- it means SUCCESSFUL!
 
 ### 6. E2E Testing
 #### 	a. Fetch the ".jar" files for testing:
