@@ -122,7 +122,7 @@ pipeline {
                             script: "git log --format=\"medium\" -1 | grep '#e2e' || true",
                             returnStdout: true,
                         )
-                        if (E2E_CHECKER == '#e2e') {
+                        if (E2E_CHECKER) {
                             echo "E2E Testing here"
                         }
                     }

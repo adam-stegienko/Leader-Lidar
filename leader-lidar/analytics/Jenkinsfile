@@ -119,15 +119,14 @@ pipeline {
                 steps {
                     script {
                         E2E_CHECKER = sh(
-                            script: "git log --format=\"medium\" -1 | grep #e2e || true",
+                            script: "git log --format=\"medium\" -1 | grep '#e2e' || true",
                             returnStdout: true,
                         )
-                        if (E2E_CHECKER == "#e2e") {
+                        if (E2E_CHECKER) {
                             echo "E2E Testing here"
                         }
                     }
-                }
-        }
+                
         stage('E2E Testing') {
             when {
                 anyOf {
