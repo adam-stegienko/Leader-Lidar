@@ -7,6 +7,7 @@ pipeline {
     environment {
         GITLAB = credentials('a31843c7-9aa6-4723-95ff-87a1feb934a1')
         AWS_CREDS = credentials('aws-adam-iam')
+        JFROG_ARTIFACTORY = credentials('jfrog-artifactory')
     }
     stages {
         stage('Cleaning') {
@@ -28,12 +29,12 @@ pipeline {
             }
         }
         stage('Release branch versioning') {
-            when { branch "release*" }
+            when { branch "release/*" }
             steps {
                 script {
                     sh"""
                         git checkout master
-                        git remote set-url origin http://\"$GITLAB\"@ec2-3-125-51-254.eu-central-1.compute.amazonaws.com/adam/exam-telemetry.git
+                        git remote set-url origin http://\"$GITLAB\"@ec2-3-125-51-254.eu-central-1.compute.amazonaws.com/adam/exam-analytics.git
                         git pull --rebase
                     """
                     BRANCH_EXISTING = sh(
@@ -52,7 +53,7 @@ pipeline {
                             sh"""
                             git branch $BRANCH_NAME
                             git checkout $BRANCH_NAME
-                            git remote set-url origin http://\"$GITLAB\"@ec2-3-125-51-254.eu-central-1.compute.amazonaws.com/adam/exam-telemetry.git
+                            git remote set-url origin http://\"$GITLAB\"@ec2-3-125-51-254.eu-central-1.compute.amazonaws.com/adam/exam-analytics.git
                             git fetch --tags
                             """
                         }
@@ -115,7 +116,7 @@ pipeline {
             }
         }
         stage('Conditional E2E Testing') {
-            when { branch "feature*" }
+            when { branch "feature/*" }
                 steps {
                     script {
                         E2E_CHECKER = sh(
@@ -126,12 +127,13 @@ pipeline {
                             echo "E2E Testing here"
                         }
                     }
-                
+                }
+        }
         stage('E2E Testing') {
             when {
                 anyOf {
                     branch "master"
-                    branch "release*"
+                    branch "release/*"
                 }
             }
             steps {
@@ -144,16 +146,30 @@ pipeline {
             when {
                 anyOf {
                     branch "master"
-                    branch "release*"
+                    branch "release/*"
                 }
             }
             steps {
                 script {
                     configFileProvider([configFile(fileId: 'fc3e184d-fd76-4262-a1e7-9a5671ebd340', variable: 'MAVEN_SETTINGS_XML')]) {
-                        sh "mvn  -Dmaven.test.failure.ignore=true -DskipTests -s $MAVEN_SETTINGS_XML deploy"
+                        sh "mvn  -Dmaven.test.failure.ignore=true -DskipTests -s $MAVEN_SETTINGS_XML clean deploy -U"
                     }
                     echo "An artifact for maven CI job has been created."
                 } 
+            }
+        }
+        stage('Tagging and Pushing to GitLab Repository') {
+            when { branch "release/*" }
+            steps {
+                script {
+                    sh"""
+                    git config --global user.email "adam.stegienko1@gmail.com"
+                    git config --global user.name "Adam Stegienko"
+                    git clean -f -x
+                    git tag -a $NEW_TAG -m \"New $NEW_TAG tag added to branch $BRANCH_NAME\"
+                    git push origin $BRANCH_NAME --tag
+                    """
+                }
             }
         }
     }

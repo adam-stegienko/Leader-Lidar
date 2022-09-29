@@ -29,11 +29,11 @@
 
 #### 4. CI details:
 ###### 	a. Telemetry:
-		- "feature/\*" branches -- passing build and unit tests for every commit (triggered by push); if commit message is with "#e2e", e2e tests for telemetry will be executed using analytics:99-SNAPSHOT.jar
+		- "feature/\*" branches -- passing build and unit tests for every commit (triggered by push); if commit message is with "#e2e", e2e tests for telemetry will be executed using analytics:99-SNAPSHOT.jar -- PASSED
 		- "master" branch -- passing build, unit tests, e2e tests, and publishes to artifactory (mvn deploy -DskipTests) for every commit (triggered by push)
 		- "release/\*" branches -- attempting a release (step 5); no E2E tests!
 ###### 	b. Analytics:
-		- "feature/\*" branches -- passing build and unit tests for every commit (triggered by push); e2e tests for analytics will be executed using telemetry:99-SNAPSHOT.jar
+		- "feature/\*" branches -- passing build and unit tests for every commit (triggered by push); e2e tests for analytics will be executed using telemetry:99-SNAPSHOT.jar -- PASSED
 		- "master" branch -- passing build, unit tests, e2e tests, and publishes to artifactory (mvn deploy -DskipTests) for every commit (triggered by push)
 		- "release/\*" branches -- attempting a release (step 5)
 ###### 	c. Product:
@@ -62,3 +62,15 @@
 ###### 	e. Simulator should return 0 status code on finish -- it means SUCCESSFUL!
 
 
+sh "mvn versions:use-latest-versions"
+curl -u admin:APMwPGCGPEk4wKid1LpRKyDBqY -O http://ec2-3-67-195-219.eu-central-1.compute.amazonaws.com:8081/artifactory/libs-snapshot-local/com/lidar/analytics/99-SNAPSHOT/analytics-99-20220929.110131-1.jar
+
+
+E2E Testing
+===========
+- Fetch the jars you want to test:
+  * for the product, you can find them in the zip
+  * in analytics you can find one in the target folder and the other can be downloaded from artifactory using curl, wget etc.
+- To execute testing you need to run simulator, making sure that simulator, telemetry and analytics jars are in its classpath (java -cp <jar1>:<jar2>:<jar3> com.lidar.simulation.Simulator)
+- simulator will run all tests found in tests.txt on it's execution folder (you can use tests-sanity.txt initially, but the goal is to run tests-full.txt, and fast)
+- simulator returns non zero for failed tests
