@@ -35,7 +35,7 @@ pipeline {
                 script {
                     sh"""
                         git checkout master
-                        git remote set-url origin http://\"$GITLAB\"@gitlab_repo/adam/exam-telemetry.git
+                        git remote set-url origin http://\"$GITLAB\"@gitlab_repo/adam/exam-product.git
                         git pull --rebase
                     """
                     BRANCH_EXISTING = sh(
@@ -54,7 +54,7 @@ pipeline {
                             sh"""
                             git branch $BRANCH_NAME
                             git checkout $BRANCH_NAME
-                            git remote set-url origin http://\"$GITLAB\"@gitlab_repo/adam/exam-telemetry.git
+                            git remote set-url origin http://\"$GITLAB\"@gitlab_repo/adam/exam-product.git
                             git fetch --tags
                             """
                         }
@@ -116,38 +116,18 @@ pipeline {
                 } 
             }
         }
-        stage('Conditional E2E Testing') {
-            when { branch "feature/*" }
-                steps {
-                    script {
-                        E2E_CHECKER = sh(
-                            script: "git log --format=\"medium\" -1 | grep '#e2e' || true",
-                            returnStdout: true,
-                        )
-                        if (E2E_CHECKER) {
-                            configFileProvider([configFile(fileId: 'fc3e184d-fd76-4262-a1e7-9a5671ebd340', variable: 'MAVEN_SETTINGS_XML')]) {
-                                sh"""
-                                mvn -s $MAVEN_SETTINGS_XML dependency:get -DrepoUrl=http://artifactory:8081/artifactory/libs-snapshot-local -Dartifact=com.lidar:simulator:99-SNAPSHOT:jar -Ddest=./simulator.jar
-                                mvn -s $MAVEN_SETTINGS_XML dependency:get -DrepoUrl=http://artifactory:8081/artifactory/libs-snapshot-local -Dartifact=com.lidar:analytics:99-SNAPSHOT:jar -Ddest=./analytics.jar
-                                mv tests-full.txt tests.txt
-                                mv ./target/telemetry*.jar telemetry.jar
-                                java -cp telemetry.jar:analytics.jar:simulator.jar com.lidar.simulation.Simulator
-                                """
-                            }
-                        }
-                    }
-                }
-        }
         stage('E2E Testing') {
-            when { branch "master" }
+            when { branch "release/*" }
             steps {
                 script {
+                    echo "E2E Testing started."
                     configFileProvider([configFile(fileId: 'fc3e184d-fd76-4262-a1e7-9a5671ebd340', variable: 'MAVEN_SETTINGS_XML')]) {
                         sh"""
                         mvn -s $MAVEN_SETTINGS_XML dependency:get -DrepoUrl=http://artifactory:8081/artifactory/libs-snapshot-local -Dartifact=com.lidar:simulator:99-SNAPSHOT:jar -Ddest=./simulator.jar
-                        mvn -s $MAVEN_SETTINGS_XML dependency:get -DrepoUrl=http://artifactory:8081/artifactory/libs-snapshot-local -Dartifact=com.lidar:analytics:99-SNAPSHOT:jar -Ddest=./analytics.jar
-                        mv tests-full.txt tests.txt
-                        mv ./target/telemetry*.jar telemetry.jar
+                        unzip ./target/leader-product-*.zip
+                        mv ./telemetry-*.jar ./telemetry.jar
+                        mv ./analytics-*.jar ./analytics.jar
+                        mv tests-sanity.txt tests.txt
                         java -cp telemetry.jar:analytics.jar:simulator.jar com.lidar.simulation.Simulator
                         """
                     }
@@ -157,7 +137,6 @@ pipeline {
         stage('Publishing to artifactory') {
             when {
                 anyOf {
-                    branch "master"
                     branch "release/*"
                 }
             }

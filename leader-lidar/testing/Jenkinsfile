@@ -7,6 +7,7 @@ pipeline {
     environment {
         GITLAB = credentials('a31843c7-9aa6-4723-95ff-87a1feb934a1')
         AWS_CREDS = credentials('aws-adam-iam')
+        JFROG_ARTIFACTORY = credentials('jfrog-artifactory')
     }
     stages {
         stage('Cleaning') {
@@ -68,7 +69,16 @@ pipeline {
         stage('E2E Testing') {
             steps {
                 script {
-                    echo "E2E Testing here"
+                    echo "E2E Testing started."
+                    configFileProvider([configFile(fileId: 'fc3e184d-fd76-4262-a1e7-9a5671ebd340', variable: 'MAVEN_SETTINGS_XML')]) {
+                        sh"""
+                        mvn -s $MAVEN_SETTINGS_XML dependency:get -DrepoUrl=http://artifactory:8081/artifactory/libs-snapshot-local -Dartifact=com.lidar:telemetry:99-SNAPSHOT:jar -Ddest=./telemetry.jar
+                        mvn -s $MAVEN_SETTINGS_XML dependency:get -DrepoUrl=http://artifactory:8081/artifactory/libs-snapshot-local -Dartifact=com.lidar:analytics:99-SNAPSHOT:jar -Ddest=./analytics.jar
+                        mv tests-full.txt tests.txt
+                        mv ./target/simulator*.jar simulator.jar
+                        java -cp telemetry.jar:analytics.jar:simulator.jar com.lidar.simulation.Simulator
+                        """
+                    }
                 }
             }    
         }

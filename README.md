@@ -62,6 +62,8 @@
 ###### 	e. Simulator should return 0 status code on finish -- it means SUCCESSFUL!
 
 
+sh "mvn versions:use -DnewVersion=\"[\${MINOR_VERSION}.\*,)\""
+
 sh "mvn versions:use-latest-versions"
 curl -u admin:APMwPGCGPEk4wKid1LpRKyDBqY -O http://ec2-3-67-195-219.eu-central-1.compute.amazonaws.com:8081/artifactory/libs-snapshot-local/com/lidar/analytics/99-SNAPSHOT/analytics-99-20220929.110131-1.jar
 
