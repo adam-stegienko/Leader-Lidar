@@ -60,26 +60,3 @@
 ###### 	c. Inititally run "tests-sanity.txt" -- PASSED
 ###### 	d. Ultimately run all tests found in tests.txt (tests-full.txt); do it fast! -- PASSED
 ###### 	e. Simulator should return 0 status code on finish -- it means SUCCESSFUL! -- PASSED
-
-
-sh "mvn versions:use -DnewVersion=\"[\${MINOR_VERSION}.\*,)\""
-
-sh "mvn versions:use-latest-versions"
-curl -u admin:APMwPGCGPEk4wKid1LpRKyDBqY -O http://ec2-3-67-195-219.eu-central-1.compute.amazonaws.com:8081/artifactory/libs-snapshot-local/com/lidar/analytics/99-SNAPSHOT/analytics-99-20220929.110131-1.jar
-
-
-                        // mvn versions:set-property -Dproperty=telemetry.version -DnewVersion="[$MINOR_VERSION,)"
-                        // mvn versions:set-property -Dproperty=analytics.version -DnewVersion="[$MINOR_VERSION,)"
-
-
-                         -DincludesList=\"com.lidar:simulator:jar:[$MINOR_VERSION,)\
-
- (,${project.version}]
-
-
-
- nginx with load balancers messed up --> read about it
- inernet gateway --> readabout it more
-
-
- http://ec2-3-67-195-219.eu-central-1.compute.amazonaws.com:8081/artifactory/libs-release-local/com/lidar/telemetry/ --> curl latest
