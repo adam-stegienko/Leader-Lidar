@@ -73,7 +73,11 @@ pipeline {
                     NEW_TAG = MINOR_VERSION + "." + NEW_PATCH
                     echo "The new tag for feature commit is $NEW_TAG"
                     configFileProvider([configFile(fileId: 'fc3e184d-fd76-4262-a1e7-9a5671ebd340', variable: 'MAVEN_SETTINGS_XML')]) {
-                        sh "mvn versions:set -DnewVersion=$NEW_TAG"
+                        sh"""
+                        mvn versions:set -DnewVersion=$NEW_TAG
+                        mvn versions:set-property -Dproperty=telemetry.version -DnewVersion="[,${NEW_TAG})"
+                        mvn versions:set-property -Dproperty=analytics.version -DnewVersion="[,${NEW_TAG})"
+                        """
                     }
                 }
             }
@@ -123,11 +127,12 @@ pipeline {
                     echo "E2E Testing started."
                     configFileProvider([configFile(fileId: 'fc3e184d-fd76-4262-a1e7-9a5671ebd340', variable: 'MAVEN_SETTINGS_XML')]) {
                         sh"""
-                        mvn -s $MAVEN_SETTINGS_XML dependency:get -DrepoUrl=http://artifactory:8081/artifactory/libs-snapshot-local -Dartifact=com.lidar:simulator:99-SNAPSHOT:jar -Ddest=./simulator.jar
+                        mvn dependency:list
+                        mvn -s $MAVEN_SETTINGS_XML dependency:get -DrepoUrl=http://artifactory:8081/artifactory/libs-snapshot-local -Dartifact=com.lidar:simulator:LATEST:jar -Ddest=./simulator.jar
                         unzip ./target/leader-product-*.zip
                         mv ./telemetry-*.jar ./telemetry.jar
                         mv ./analytics-*.jar ./analytics.jar
-                        mv tests-sanity.txt tests.txt
+                        mv tests-full.txt tests.txt
                         java -cp telemetry.jar:analytics.jar:simulator.jar com.lidar.simulation.Simulator
                         """
                     }

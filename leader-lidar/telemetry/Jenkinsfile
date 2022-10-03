@@ -73,7 +73,9 @@ pipeline {
                     NEW_TAG = MINOR_VERSION + "." + NEW_PATCH
                     echo "The new tag for feature commit is $NEW_TAG"
                     configFileProvider([configFile(fileId: 'fc3e184d-fd76-4262-a1e7-9a5671ebd340', variable: 'MAVEN_SETTINGS_XML')]) {
-                        sh "mvn versions:set -DnewVersion=$NEW_TAG"
+                        sh"""
+                        mvn versions:set -DnewVersion=$NEW_TAG
+                        """
                     }
                 }
             }
